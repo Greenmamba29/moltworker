@@ -222,12 +222,15 @@ if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
     config.channels.slack.enabled = true;
 }
 
-// Base URL override (e.g., for Cloudflare AI Gateway)
+// Base URL override (e.g., for Cloudflare AI Gateway or OpenAI-compatible APIs like Kimi)
 // Usage: Set AI_GATEWAY_BASE_URL or ANTHROPIC_BASE_URL to your endpoint like:
 //   https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/anthropic
 //   https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/openai
-const baseUrl = (process.env.AI_GATEWAY_BASE_URL || process.env.ANTHROPIC_BASE_URL || '').replace(/\/+$/, '');
-const isOpenAI = baseUrl.endsWith('/openai');
+// Or set OPENAI_BASE_URL for OpenAI-compatible APIs like:
+//   https://api.moonshot.cn/v1 (Kimi/Moonshot AI)
+//   https://api.openai.com/v1 (OpenAI)
+const baseUrl = (process.env.AI_GATEWAY_BASE_URL || process.env.OPENAI_BASE_URL || process.env.ANTHROPIC_BASE_URL || '').replace(/\/+$/, '');
+const isOpenAI = baseUrl.endsWith('/openai') || baseUrl.includes('moonshot.cn') || process.env.OPENAI_BASE_URL;
 
 if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
@@ -235,10 +238,18 @@ if (isOpenAI) {
     console.log('Configuring OpenAI provider with base URL:', baseUrl);
     config.models = config.models || {};
     config.models.providers = config.models.providers || {};
+
+    // Detect if we're using Kimi/Moonshot AI
+    const isKimi = baseUrl.includes('moonshot.cn');
+
     config.models.providers.openai = {
         baseUrl: baseUrl,
         api: 'openai-responses',
-        models: [
+        models: isKimi ? [
+            { id: 'moonshot-v1-128k', name: 'Kimi v1 128k', contextWindow: 128000 },
+            { id: 'moonshot-v1-32k', name: 'Kimi v1 32k', contextWindow: 32000 },
+            { id: 'moonshot-v1-8k', name: 'Kimi v1 8k', contextWindow: 8000 },
+        ] : [
             { id: 'gpt-5.2', name: 'GPT-5.2', contextWindow: 200000 },
             { id: 'gpt-5', name: 'GPT-5', contextWindow: 200000 },
             { id: 'gpt-4.5-preview', name: 'GPT-4.5 Preview', contextWindow: 128000 },
@@ -246,10 +257,17 @@ if (isOpenAI) {
     };
     // Add models to the allowlist so they appear in /models
     config.agents.defaults.models = config.agents.defaults.models || {};
-    config.agents.defaults.models['openai/gpt-5.2'] = { alias: 'GPT-5.2' };
-    config.agents.defaults.models['openai/gpt-5'] = { alias: 'GPT-5' };
-    config.agents.defaults.models['openai/gpt-4.5-preview'] = { alias: 'GPT-4.5' };
-    config.agents.defaults.model.primary = 'openai/gpt-5.2';
+    if (isKimi) {
+        config.agents.defaults.models['openai/moonshot-v1-128k'] = { alias: 'Kimi 128k' };
+        config.agents.defaults.models['openai/moonshot-v1-32k'] = { alias: 'Kimi 32k' };
+        config.agents.defaults.models['openai/moonshot-v1-8k'] = { alias: 'Kimi 8k' };
+        config.agents.defaults.model.primary = 'openai/moonshot-v1-128k';
+    } else {
+        config.agents.defaults.models['openai/gpt-5.2'] = { alias: 'GPT-5.2' };
+        config.agents.defaults.models['openai/gpt-5'] = { alias: 'GPT-5' };
+        config.agents.defaults.models['openai/gpt-4.5-preview'] = { alias: 'GPT-4.5' };
+        config.agents.defaults.model.primary = 'openai/gpt-5.2';
+    }
 } else if (baseUrl) {
     console.log('Configuring Anthropic provider with base URL:', baseUrl);
     config.models = config.models || {};
