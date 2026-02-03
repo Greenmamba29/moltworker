@@ -72,13 +72,23 @@
   },
   // Note: CF_ACCOUNT_ID should be set via `wrangler secret put CF_ACCOUNT_ID`
   // Secrets to configure via `wrangler secret put`:
+  //
+  // LLM API Configuration (choose one):
   // - ANTHROPIC_API_KEY: Your Anthropic API key
+  // - OPENAI_API_KEY: OpenAI or OpenAI-compatible API key (e.g., Kimi/Moonshot AI)
+  // - OPENAI_BASE_URL: Base URL for OpenAI-compatible APIs (e.g., https://api.moonshot.cn/v1)
+  //
+  // Cloudflare Access (for admin UI authentication):
   // - CF_ACCESS_TEAM_DOMAIN: Cloudflare Access team domain
   // - CF_ACCESS_AUD: Cloudflare Access application audience
+  //
+  // Chat Integrations (optional):
   // - TELEGRAM_BOT_TOKEN: (optional) Telegram bot token
   // - DISCORD_BOT_TOKEN: (optional) Discord bot token
   // - SLACK_BOT_TOKEN: (optional) Slack bot token
   // - SLACK_APP_TOKEN: (optional) Slack app token
+  //
+  // Gateway & Security:
   // - MOLTBOT_GATEWAY_TOKEN: (optional) Token to protect gateway access, if unset device pairing will be used
   // - CDP_SECRET: (optional) Shared secret for /cdp endpoint authentication
   //
